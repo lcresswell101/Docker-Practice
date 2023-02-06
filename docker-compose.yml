@@ -1,0 +1,53 @@
+version: '3'
+
+services:
+  nginx:
+    image: 761624367457.dkr.ecr.eu-west-2.amazonaws.com/test:latest
+    ports:
+      - "8080:80"
+    networks:
+      - internal
+    restart: 'unless-stopped'
+    volumes:
+      - './data/:/var/www/html/'
+      - './logs/nginx:/var/log/nginx/'
+    depends_on:
+      - php
+
+  php:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    volumes:
+      - './data:/var/www/html'
+      - './logs/php.log:/var/log/fpm-php.www.log'
+    networks:
+      - internal
+    depends_on:
+      - mysql
+    restart: 'unless-stopped'
+
+  mysql:
+    image: 'mysql/mysql-server:8.0'
+    ports:
+      - '3306:3306'
+    volumes:
+      - 'mysql:/var/lib/mysql'
+    networks:
+      - internal
+    environment:
+      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_DATABASE: '${DB_DATABASE}'
+      MYSQL_USER: '${DB_USERNAME}'
+      MYSQL_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+    restart: 'unless-stopped'
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  mysql:
+    driver: local
